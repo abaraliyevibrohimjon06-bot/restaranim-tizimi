@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oshpaz Panel</title>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script>
+if(typeof Peer === 'undefined'){
+  document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"><\/script>');
+}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--gold:#C9A84C;--dark:#0D1117;--dark2:#161B22;--dark3:#1C2128;--green:#2EA043;--green-light:#3FB950;--red:#F85149;--yellow:#D29922;--blue:#388BFD;--text:#E6EDF3;--muted:#7D8590;--border:#30363D;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--dark);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  /* LOGIN */
+  #loginScreen{min-height:100vh;display:none;align-items:center;justify-content:center;padding:20px;}
+  #loginScreen.active{display:flex;}
+  .login-card{background:var(--dark2);border:1px solid var(--border);border-radius:20px;padding:32px 24px;width:100%;max-width:320px;text-align:center;}
+  .login-icon{font-size:48px;margin-bottom:14px;}
+  .login-title{font-family:'Playfair Display',serif;font-size:24px;color:var(--gold);margin-bottom:6px;}
+  .login-sub{font-size:13px;color:var(--muted);margin-bottom:24px;}
+  .login-input{width:100%;background:var(--dark3);border:1px solid var(--border);border-radius:12px;padding:13px 16px;font-size:18px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;text-align:center;letter-spacing:6px;margin-bottom:12px;}
+  .login-input:focus{border-color:var(--green);}
+  .login-btn{width:100%;background:var(--green);border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;}
+  .login-err{font-size:13px;color:var(--red);margin-top:8px;min-height:18px;}
+
+  /* MAIN */
+  #mainScreen{min-height:100vh;}
+  .top-bar{background:var(--dark2);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;}
+  .top-bar-title{font-family:'Playfair Display',serif;font-size:18px;color:var(--gold);flex:1;}
+  .conn-badge{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);background:var(--dark3);border:1px solid var(--border);border-radius:20px;padding:4px 10px;}
+  .conn-dot{width:7px;height:7px;border-radius:50%;background:var(--red);flex-shrink:0;}
+  .conn-dot.on{background:var(--green-light);box-shadow:0 0 6px var(--green-light);}
+  .sound-btn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:16px;cursor:pointer;}
+  .logout-btn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;}
+
+  /* QR / ID */
+  .id-box{background:var(--dark2);border:1px solid rgba(201,168,76,0.3);border-radius:14px;margin:12px 14px;padding:12px 16px;display:flex;align-items:center;gap:10px;}
+  .id-label{font-size:12px;color:var(--muted);}
+  .id-value{font-size:14px;color:var(--gold);font-weight:700;font-family:monospace;flex:1;word-break:break-all;}
+  .copy-btn{background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--gold);cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0;}
+
+  .stats-bar{display:flex;gap:8px;padding:0 14px 12px;overflow-x:auto;scrollbar-width:none;}
+  .stats-bar::-webkit-scrollbar{display:none;}
+  .stat-card{flex-shrink:0;background:var(--dark2);border:1px solid var(--border);border-radius:14px;padding:10px 16px;text-align:center;min-width:75px;}
+  .stat-num{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;}
+  .stat-lbl{font-size:10px;color:var(--muted);margin-top:2px;}
+
+  .filter-tabs{display:flex;gap:6px;padding:0 14px 12px;overflow-x:auto;scrollbar-width:none;}
+  .filter-tabs::-webkit-scrollbar{display:none;}
+  .ftab{flex-shrink:0;padding:7px 14px;border-radius:20px;border:1px solid var(--border);background:var(--dark3);color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+  .ftab.active{background:var(--green);color:#fff;border-color:var(--green);font-weight:600;}
+
+  .orders-container{padding:0 14px 100px;display:flex;flex-direction:column;gap:12px;}
+  .order-card{background:var(--dark2);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+  .order-card.new-order{border-color:var(--yellow);animation:pulse 1.5s ease-in-out 4;}
+  .order-card.done{border-color:var(--green);opacity:.65;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(210,153,34,0);}50%{box-shadow:0 0 0 8px rgba(210,153,34,0.25);}}
+
+  .card-header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--border);}
+  .card-table{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;}
+  .card-num{font-size:11px;color:var(--muted);flex:1;}
+  .card-time{font-size:11px;color:var(--muted);}
+  .status-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid;}
+  .status-badge.yangi{background:rgba(210,153,34,0.15);border-color:var(--yellow);color:var(--yellow);}
+  .status-badge.tayyorlanmoqda{background:rgba(56,139,253,0.15);border-color:var(--blue);color:var(--blue);}
+  .status-badge.tayyor{background:rgba(46,160,67,0.15);border-color:var(--green-light);color:var(--green-light);}
+
+  .card-items{padding:10px 14px;}
+  .item-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(48,54,61,0.5);}
+  .item-row:last-child{border-bottom:none;}
+  .ir-emoji{font-size:18px;width:26px;text-align:center;}
+  .ir-name{flex:1;font-size:13px;}
+  .ir-qty{font-size:12px;color:var(--muted);background:var(--dark3);border-radius:6px;padding:2px 8px;}
+
+  .card-footer{padding:10px 14px;background:rgba(0,0,0,0.2);display:flex;align-items:center;gap:8px;}
+  .card-total{font-size:13px;color:var(--muted);flex:1;}
+  .card-total span{color:var(--gold);font-weight:600;}
+  .action-btn{padding:8px 14px;border-radius:10px;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+  .btn-start{background:var(--blue);color:#fff;}
+  .btn-done{background:var(--green);color:#fff;}
+  .btn-undo{background:var(--dark3);color:var(--muted);border:1px solid var(--border);}
+
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+  .empty-state div{font-size:48px;margin-bottom:14px;}
+
+  .new-alert{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--yellow);color:#000;border-radius:16px;padding:12px 24px;font-size:14px;font-weight:700;z-index:100;transition:transform .4s;white-space:nowrap;box-shadow:0 4px 20px rgba(210,153,34,0.5);}
+  .new-alert.show{transform:translateX(-50%) translateY(0);}
+
+  .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-70px);background:var(--dark3);border:1px solid var(--border);border-radius:12px;padding:10px 20px;font-size:13px;color:var(--text);z-index:200;transition:transform .3s;white-space:nowrap;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="active">
+  <div class="login-card">
+    <div class="login-icon">👨‍🍳</div>
+    <div class="login-title">Oshpaz Panel</div>
+    <div class="login-sub">Parolni kiriting</div>
+    <input class="login-input" type="password" id="passInput" placeholder="••••" maxlength="10" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Kirish</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="mainScreen" class="screen">
+  <div class="top-bar">
+    <div class="top-bar-title">👨‍🍳 Oshpaz</div>
+    <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔔</button>
+    <div class="conn-badge"><div class="conn-dot" id="connDot"></div><span id="connText">Kutilmoqda</span></div>
+    <button class="logout-btn" onclick="doLogout()">Chiqish</button>
+  </div>
+
+  <div class="id-box">
+    <div style="flex:1">
+      <div class="id-label">📡 Bu qurilma ID si — mijoz.html ga kiriting:</div>
+      <div class="id-value" id="myPeerId">Yuklanmoqda...</div>
+    </div>
+    <button class="copy-btn" onclick="copyId()">Nusxa</button>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-card"><div class="stat-num" style="color:var(--yellow)" id="sNew">0</div><div class="stat-lbl">Yangi</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--blue)" id="sCook">0</div><div class="stat-lbl">Pishirilmoqda</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--green-light)" id="sDone">0</div><div class="stat-lbl">Tayyor</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--text)" id="sAll">0</div><div class="stat-lbl">Jami</div></div>
+  </div>
+
+  <div class="filter-tabs">
+    <button class="ftab active" onclick="setFilter('all',this)">Barchasi</button>
+    <button class="ftab" onclick="setFilter('yangi',this)">🔴 Yangi</button>
+    <button class="ftab" onclick="setFilter('tayyorlanmoqda',this)">🔵 Pishirilmoqda</button>
+    <button class="ftab" onclick="setFilter('tayyor',this)">✅ Tayyor</button>
+  </div>
+
+  <div class="orders-container" id="ordersContainer">
+    <div class="empty-state"><div>🍽️</div><p>Hali buyurtma yo'q</p></div>
+  </div>
+</div>
+
+<div class="new-alert" id="newAlert">🔔 Yangi buyurtma!</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CHEF_PASS = "5678";
+let peer, orders = {}, currentFilter = 'all', soundOn = true;
+let connections = []; // mijozlardan kelgan connectionlar
+
+function doLogin(){
+  if(document.getElementById('passInput').value === CHEF_PASS){
+    document.getElementById('loginScreen').classList.remove('active');
+    document.getElementById('mainScreen').classList.add('screen','active');
+    document.getElementById('mainScreen').style.display = 'block';
+    initPeer();
+  } else {
+    document.getElementById('loginErr').textContent = '❌ Noto\'g\'ri parol!';
+    document.getElementById('passInput').value = '';
+  }
+}
+
+function doLogout(){
+  if(peer) peer.destroy();
+  peer = null; orders = {}; connections = [];
+  document.getElementById('mainScreen').style.display = 'none';
+  document.getElementById('loginScreen').classList.add('active');
+  document.getElementById('passInput').value = '';
+}
+
+function initPeer(){
+  // Oshpaz har doim "restoran-oshpaz-2024" ID bilan ochiladi
+  // Mijozlar shu ID ga ulanadi
+  const OSHPAZ_ID = 'restoran-oshpaz-2024';
+
+  peer = new Peer(OSHPAZ_ID, {
+    host: '0.peerjs.com',
+    port: 443,
+    secure: true,
+    path: '/'
+  });
+
+  peer.on('open', (id) => {
+    document.getElementById('myPeerId').textContent = id;
+    setConn(true, 'Ulangan ✓');
+    showToast('✅ Tayyor! Mijozlar ulanishi mumkin');
+  });
+
+  peer.on('connection', (conn) => {
+    connections.push(conn);
+    conn.on('data', (data) => handleMessage(data, conn));
+    conn.on('close', () => {
+      connections = connections.filter(c => c !== conn);
+    });
+    // Yangi ulanishga mavjud buyurtmalarni yuborish
+    conn.on('open', () => {
+      conn.send({ type: 'all_orders', orders });
+    });
+  });
+
+  peer.on('error', (err) => {
+    if(err.type === 'unavailable-id'){
+      // ID band bo'lsa, random ID olamiz
+      peer.destroy();
+      peer = new Peer({ host:'0.peerjs.com', port:443, secure:true, path:'/' });
+      peer.on('open', (id) => {
+        document.getElementById('myPeerId').textContent = id;
+        setConn(true, 'Ulangan ✓');
+      });
+      peer.on('connection', (conn) => {
+        connections.push(conn);
+        conn.on('data', (data) => handleMessage(data, conn));
+        conn.on('open', () => conn.send({ type: 'all_orders', orders }));
+      });
+    } else {
+      setConn(false, 'Xato');
+      showToast('❌ Ulanish xatosi: ' + err.type);
+    }
+  });
+
+  peer.on('disconnected', () => setConn(false, 'Uzildi'));
+}
+
+function handleMessage(data, conn){
+  if(data.type === 'new_order'){
+    const order = data.order;
+    orders[order.id] = order;
+    onNewOrder(order);
+    renderOrders();
+    // Boshqa mijozlarga ham yuborish (agar kerak bo'lsa)
+    broadcast({ type: 'order_confirmed', orderId: order.id, raqam: order.raqam }, conn);
+  }
+  if(data.type === 'get_orders'){
+    conn.send({ type: 'all_orders', orders });
+  }
+}
+
+function broadcast(data, except){
+  connections.forEach(c => {
+    if(c !== except && c.open) try{ c.send(data); }catch(e){}
+  });
+}
+
+function updateStatus(id, holat){
+  if(!orders[id]) return;
+  orders[id].holat = holat;
+  renderOrders();
+  const labels = {yangi:'Yangi',tayyorlanmoqda:'Pishirilmoqda',tayyor:'Tayyor'};
+  showToast('✅ ' + labels[holat]);
+}
+
+function onNewOrder(order){
+  if(soundOn) playBeep();
+  const a = document.getElementById('newAlert');
+  a.textContent = `🔔 Stol ${order.stol} — Yangi buyurtma!`;
+  a.classList.add('show');
+  setTimeout(() => a.classList.remove('show'), 4000);
+}
+
+function playBeep(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    [0,200,400].forEach(d => setTimeout(() => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880;
+      g.gain.setValueAtTime(0.4, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.3);
+      o.start(); o.stop(ctx.currentTime+0.3);
+    }, d));
+  }catch(e){}
+}
+
+function toggleSound(){
+  soundOn = !soundOn;
+  document.getElementById('soundBtn').textContent = soundOn ? '🔔' : '🔕';
+  showToast(soundOn ? '🔔 Ovoz yoqildi' : '🔕 Ovoz o\'chirildi');
+}
+
+function setFilter(f, btn){
+  currentFilter = f;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderOrders();
+}
+
+function fmt(p){ return p.toString().replace(/\B(?=(\d{3})+(?!\d))/g," "); }
+function timeSince(ts){
+  if(!ts) return '';
+  const s = Math.floor((Date.now()-ts)/1000);
+  if(s<60) return s+'s oldin';
+  if(s<3600) return Math.floor(s/60)+'d oldin';
+  return Math.floor(s/3600)+'s oldin';
+}
+
+function renderOrders(){
+  const entries = Object.values(orders).sort((a,b) => (b.vaqt||0)-(a.vaqt||0));
+  const filtered = currentFilter==='all' ? entries : entries.filter(o => o.holat===currentFilter);
+
+  document.getElementById('sNew').textContent  = entries.filter(o=>o.holat==='yangi').length;
+  document.getElementById('sCook').textContent = entries.filter(o=>o.holat==='tayyorlanmoqda').length;
+  document.getElementById('sDone').textContent = entries.filter(o=>o.holat==='tayyor').length;
+  document.getElementById('sAll').textContent  = entries.length;
+
+  const c = document.getElementById('ordersContainer');
+  if(!filtered.length){
+    c.innerHTML = `<div class="empty-state"><div>${currentFilter==='yangi'?'✅':'🍽️'}</div><p>Hali buyurtma yo'q</p></div>`;
+    return;
+  }
+
+  c.innerHTML = filtered.map(o => {
+    const slbl = {yangi:'Yangi',tayyorlanmoqda:'Pishirilmoqda',tayyor:'Tayyor'}[o.holat]||o.holat;
+    const items = (o.taomlar||[]).map(t=>`
+      <div class="item-row">
+        <span class="ir-emoji">${t.emoji||'🍽️'}</span>
+        <span class="ir-name">${t.nom}</span>
+        <span class="ir-qty">×${t.miqdor}</span>
+      </div>`).join('');
+
+    let btn = '';
+    if(o.holat==='yangi') btn=`<button class="action-btn btn-start" onclick="updateStatus('${o.id}','tayyorlanmoqda')">🔵 Boshladim</button>`;
+    else if(o.holat==='tayyorlanmoqda') btn=`<button class="action-btn btn-done" onclick="updateStatus('${o.id}','tayyor')">✅ Tayyor</button> <button class="action-btn btn-undo" onclick="updateStatus('${o.id}','yangi')">↩</button>`;
+    else btn=`<button class="action-btn btn-undo" onclick="updateStatus('${o.id}','tayyorlanmoqda')">↩ Orqaga</button>`;
+
+    return `<div class="order-card ${o.holat==='yangi'?'new-order':''} ${o.holat==='tayyor'?'done':''}">
+      <div class="card-header">
+        <div><div class="card-table">🍽️ Stol ${o.stol}</div><div class="card-num">#${o.raqam}</div></div>
+        <div style="flex:1"></div>
+        <div class="card-time">${timeSince(o.vaqt)}</div>
+        <div class="status-badge ${o.holat}">${slbl}</div>
+      </div>
+      <div class="card-items">${items}</div>
+      <div class="card-footer">
+        <div class="card-total">Jami: <span>${fmt(o.jami_summa||0)} so'm</span></div>
+        ${btn}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setConn(on, txt){
+  document.getElementById('connDot').className = 'conn-dot' + (on?' on':'');
+  document.getElementById('connText').textContent = txt;
+}
+
+function copyId(){
+  const id = document.getElementById('myPeerId').textContent;
+  navigator.clipboard.writeText(id).then(()=>showToast('✅ Nusxalandi!')).catch(()=>{
+    prompt('Bu ID ni nusxalang:', id);
+  });
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+setInterval(()=>{ if(Object.keys(orders).length) renderOrders(); }, 30000);
+document.getElementById('passInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>
