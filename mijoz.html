@@ -3,58 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mijoz – Buyurtma</title>
+<title>Restoran – Buyurtma</title>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  :root{--gold:#C9A84C;--dark:#1A1008;--text:#F0E6CC;--border:#3D2B14;}
-  body{background:var(--dark); color:var(--text); font-family:'DM Sans',sans-serif; margin:0; padding:15px;}
-  .header{text-align:center; margin-bottom:20px;}
-  .header h1{font-family:'Playfair Display',serif; color:var(--gold);}
-  
-  .menu-grid{display:grid; grid-template-columns: 1fr 1fr; gap:15px;}
-  .taom-card{background:#2C1F0E; border:1px solid var(--border); border-radius:15px; overflow:hidden;}
-  .taom-img{width:100%; height:120px; object-fit:cover; background:#111;}
-  .taom-info{padding:10px; text-align:center;}
-  .taom-name{font-weight:700; font-size:16px;}
-  .taom-price{color:var(--gold); font-size:14px; margin-top:5px;}
-  .add-btn{width:100%; background:var(--gold); border:none; padding:8px; border-radius:8px; margin-top:10px; font-weight:700; cursor:pointer;}
-  
-  .cart-bar{position:fixed; bottom:20px; left:20px; right:20px; background:var(--gold); color:#000; padding:15px; border-radius:15px; display:none; justify-content:space-between; align-items:center; font-weight:700;}
+  :root{--gold:#C9A84C;--dark:#1A1008;--dark2:#2C1F0E;--text:#F0E6CC;--border:#3D2B14;}
+  body{background:var(--dark);color:var(--text);font-family:'DM Sans',sans-serif;margin:0;padding:15px;}
+  .header{text-align:center;margin-bottom:20px;}
+  .header h1{font-family:'Playfair Display',serif;color:var(--gold);font-size:28px;}
+  .menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .taom-card{background:var(--dark2);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;}
+  .taom-img{width:100%;height:100px;object-fit:cover;background:#000;}
+  .taom-info{padding:10px;text-align:center;flex:1;display:flex;flex-direction:column;justify-content:space-between;}
+  .taom-name{font-size:14px;font-weight:700;margin-bottom:5px;}
+  .taom-price{color:var(--gold);font-size:12px;margin-bottom:8px;}
+  .add-btn{background:var(--gold);color:#000;border:none;padding:8px;border-radius:10px;font-weight:700;width:100%;cursor:pointer;}
+  .cart-bar{position:fixed;bottom:20px;left:15px;right:15px;background:var(--gold);color:#000;padding:15px;border-radius:15px;display:none;justify-content:space-between;align-items:center;font-weight:700;box-shadow:0 10px 20px rgba(0,0,0,0.5);}
 </style>
 </head>
 <body>
-
 <div class="header">
-  <h1 id="restName">Restoran</h1>
-  <p>Stol: <select id="stolId" style="background:none; color:var(--gold); border:1px solid var(--gold); border-radius:5px;"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></p>
+  <h1 id="resTitle">Restoran</h1>
+  <p>Stol: <select id="stolId" style="background:none;color:var(--gold);border:1px solid var(--gold);padding:2px 10px;border-radius:5px"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></p>
 </div>
-
-<div class="menu-grid" id="menuDisplay">
-  <p style="grid-column: 1/3; text-align:center;">Menyu yuklanmoqda...</p>
-</div>
-
+<div class="menu-grid" id="menuDisplay"></div>
 <div class="cart-bar" id="cartBar" onclick="sendOrder()">
   <span>Buyurtma berish</span>
-  <span id="totalPriceUI">0 so'm</span>
+  <span id="totalPrice">0 so'm</span>
 </div>
-
 <script>
 let peer, conn, cart = {}, menu = [];
-
-// Boshlang'ich ulanish
 peer = new Peer();
 peer.on('open', () => {
   conn = peer.connect('restoran-oshpaz-2024');
   conn.on('data', data => {
-    if(data.type === 'settings'){
-      document.getElementById('restName').innerText = data.settings.name;
-      menu = data.settings.menu;
-      renderMenu();
+    if(data.type==='settings'){ 
+      document.getElementById('resTitle').innerText=data.settings.name; 
+      menu=data.settings.menu; renderMenu(); 
     }
   });
 });
-
 function renderMenu(){
   document.getElementById('menuDisplay').innerHTML = menu.map(m => `
     <div class="taom-card">
@@ -62,49 +50,24 @@ function renderMenu(){
       <div class="taom-info">
         <div class="taom-name">${m.name}</div>
         <div class="taom-price">${m.price.toLocaleString()} so'm</div>
-        <button class="add-btn" onclick="addToCart(${m.id})">Qo'shish +</button>
+        <button class="add-btn" onclick="add(${m.id})">Qo'shish +</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
-
-function addToCart(id){
-  const item = menu.find(m => m.id === id);
-  if(!cart[id]) cart[id] = {qty:0, item};
-  cart[id].qty++;
-  updateCartUI();
+function add(id){
+  const item = menu.find(m=>m.id===id);
+  if(!cart[id]) cart[id]={qty:0, item};
+  cart[id].qty++; updateCart();
 }
-
-function updateCartUI(){
-  let total = 0;
-  Object.values(cart).forEach(c => total += (c.qty * c.item.price));
-  if(total > 0){
-    document.getElementById('cartBar').style.display = 'flex';
-    document.getElementById('totalPriceUI').innerText = total.toLocaleString() + " so'm";
-  }
+function updateCart(){
+  let total=0; Object.values(cart).forEach(c=>total+=(c.qty*c.item.price));
+  if(total>0){ document.getElementById('cartBar').style.display='flex'; document.getElementById('totalPrice').innerText=total.toLocaleString()+" so'm"; }
 }
-
 function sendOrder(){
-  const taomlar = Object.values(cart).map(c => ({nom: c.item.name, miqdor: c.qty}));
-  let total = 0; Object.values(cart).forEach(c => total += (c.qty * c.item.price));
-  
-  const order = {
-    id: 'ord_' + Date.now(),
-    raqam: Math.floor(100 + Math.random() * 900),
-    stol: document.getElementById('stolId').value,
-    taomlar: taomlar,
-    jami_summa: total,
-    holat: 'yangi'
-  };
-
-  if(conn && conn.open){
-    conn.send({type: 'new_order', order});
-    alert("Buyurtma yuborildi!");
-    cart = {};
-    document.getElementById('cartBar').style.display = 'none';
-  } else {
-    alert("Oshpaz bilan aloqa yo'q!");
-  }
+  const taomlar = Object.values(cart).map(c=>({nom:c.item.name, miqdor:c.qty, img:c.item.img}));
+  let total=0; Object.values(cart).forEach(c=>total+=(c.qty*c.item.price));
+  const order = { id:'ord_'+Date.now(), raqam:Math.floor(100+Math.random()*900), stol:document.getElementById('stolId').value, taomlar, jami_summa:total, holat:'yangi' };
+  if(conn && conn.open){ conn.send({type:'new_order', order}); alert("Yuborildi!"); cart={}; document.getElementById('cartBar').style.display='none'; }
 }
 </script>
 </body>
