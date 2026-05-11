@@ -282,14 +282,31 @@ function startApp(){
     buildTabs(); renderMenu('all');
   }
 
+  let menuReceived = false;
+
   peer.on('open', () => {
     conn = peer.connect(oshpazId);
     conn.on('open', () => {
       setConnUI(true);
-      showMenu();
       conn.send({type:'get_menu'});
+      // 3 soniya ichida menyu kelmasa ham ko'rsatamiz
+      setTimeout(()=>{
+        if(!menuReceived) showMenu();
+      }, 3000);
     });
-    conn.on('data', handleData);
+    conn.on('data', (data) => {
+      if(data.type === 'menu_update' && !menuReceived){
+        menuReceived = true;
+        if(data.menu) menu = data.menu;
+        if(data.restName){
+          document.getElementById('headerTitle').textContent = data.restName;
+          document.getElementById('setupTitle').textContent  = data.restName;
+        }
+        showMenu();
+      } else {
+        handleData(data);
+      }
+    });
     conn.on('close', () => setConnUI(false));
     conn.on('error', () => setConnUI(false));
 
@@ -321,8 +338,19 @@ function handleData(data){
       document.getElementById('headerTitle').textContent = data.restName;
       document.getElementById('setupTitle').textContent  = data.restName;
     }
+    // Savatni saqlab menyu yangilaymiz
+    const oldCart = {...cart};
     renderMenu('all');
-    document.querySelectorAll('#menuTabs .tab').forEach((t,i)=>t.classList.toggle('active',i===0));
+    // Savat elementlarini yangilaymiz (narx o'zgarishi uchun)
+    Object.keys(oldCart).forEach(id => {
+      const item = findItem(parseInt(id));
+      if(item && oldCart[id]) {
+        cart[id] = {...oldCart[id], item};
+        refreshCtrl(parseInt(id));
+      }
+    });
+    updateBar();
+    showToast('🔄 Menyu yangilandi');
   }
 }
 
