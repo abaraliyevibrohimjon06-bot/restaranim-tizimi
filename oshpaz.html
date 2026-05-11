@@ -411,6 +411,8 @@ function doLogin(){
     showPage('pgAdmin');
     buildSecTabs(); renderAdminItems();
     updateHisobot();
+    // Admin bo'lsa ham Peer ni ishga tushirish (broadcast uchun)
+    if(!peer) initPeer();
   } else {
     document.getElementById('loginErr').textContent='❌ Noto\'g\'ri parol!';
     document.getElementById('passInput').value='';
@@ -581,8 +583,20 @@ function updateSavdoBar(){
 function saveRestName(){
   restName=document.getElementById('restNameInp').value.trim()||'Restoran';
   localStorage.setItem('restName',restName);
-  broadcast({type:'menu_update',menu,restName});
+  // Peer ulangan bo'lsa yuborish
+  broadcastMenuUpdate();
   showToast('✅ Nom saqlandi');
+}
+
+function broadcastMenuUpdate(){
+  // Agar peer mavjud va ulangan bo'lsa
+  if(connections.length > 0){
+    broadcast({type:'menu_update', menu, restName});
+    showToast('✅ Saqlandi — mijozlarga yuborildi');
+  } else {
+    // Peer yo'q — faqat localga saqlash
+    showToast('✅ Saqlandi (mijozlar ulanmagan)');
+  }
 }
 
 function resetSavdo(){
@@ -632,8 +646,7 @@ function deleteItem(id){
   if(!confirm('O\'chirasizmi?'))return;
   for(const k in menu)menu[k].items=menu[k].items.filter(i=>i.id!==id);
   saveMenuLocal(); renderAdminItems();
-  broadcast({type:'menu_update',menu,restName});
-  showToast('🗑️ O\'chirildi');
+  broadcastMenuUpdate();
 }
 
 // ===== EDIT FORM =====
@@ -707,16 +720,14 @@ function saveItem(){
   if(editingId!==null){
     for(const k in menu)menu[k].items=menu[k].items.filter(i=>i.id!==editingId);
     menu[sec].items.push({id:editingId,name,desc,price,img:currentImgBase64,emoji:'🍽️'});
-    showToast('✅ Saqlandi');
   } else {
     menu[sec].items.push({id:nextItemId++,name,desc,price,img:currentImgBase64,emoji:'🍽️'});
-    showToast('✅ Qo\'shildi');
   }
   curAdminSec=sec;
   saveMenuLocal();
   closeEditForm();
   buildSecTabs();
-  broadcast({type:'menu_update',menu,restName});
+  broadcastMenuUpdate();
 }
 
 // ===== UTILS =====
