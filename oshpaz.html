@@ -581,22 +581,15 @@ function updateSavdoBar(){
 
 // ===== ADMIN =====
 function saveRestName(){
-  restName=document.getElementById('restNameInp').value.trim()||'Restoran';
-  localStorage.setItem('restName',restName);
-  // Peer ulangan bo'lsa yuborish
+  restName = document.getElementById('restNameInp').value.trim() || 'Restoran';
+  localStorage.setItem('restName', restName);
   broadcastMenuUpdate();
-  showToast('✅ Nom saqlandi');
 }
 
 function broadcastMenuUpdate(){
-  // Agar peer mavjud va ulangan bo'lsa
-  if(connections.length > 0){
-    broadcast({type:'menu_update', menu, restName});
-    showToast('✅ Saqlandi — mijozlarga yuborildi');
-  } else {
-    // Peer yo'q — faqat localga saqlash
-    showToast('✅ Saqlandi (mijozlar ulanmagan)');
-  }
+  saveMenuLocal();
+  broadcast({type:'menu_update', menu, restName});
+  showToast('✅ Saqlandi');
 }
 
 function resetSavdo(){
