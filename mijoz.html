@@ -141,13 +141,6 @@ if(typeof Peer === 'undefined'){
     <div class="table-grid" id="tableGrid"></div>
   </div>
 
-  <div class="setup-card" id="idCard">
-    <h3>📡 Oshpaz ID (bir marta)</h3>
-    <label class="setup-label">Oshpaz telefonidagi ID ni kiriting:</label>
-    <input class="setup-input" id="oshpazIdInput" placeholder="restoran-oshpaz-2024" value="restoran-oshpaz-2024">
-    <div style="font-size:11px;color:var(--muted);">Odatda: restoran-oshpaz-2024</div>
-  </div>
-
 <button class="start-btn" id="startBtn" onclick="startApp()">Buyurtma qilish →</button>
 
 </div>
@@ -274,53 +267,44 @@ function fmt(p){return p.toString().replace(/\B(?=(\d{3})+(?!\d))/g," ");}
 
 function startApp(){
   if(!selTable){ showToast('Stol tanlang!'); return; }
-  const oshpazId = document.getElementById('oshpazIdInput').value.trim() || 'restoran-oshpaz-2024';
-  localStorage.setItem('oshpazId', oshpazId);
+  const oshpazId = 'restoran-oshpaz-2024'; // avtomatik
 
   document.getElementById('setupScreen').style.display = 'none';
   document.getElementById('connectingScreen').classList.add('show');
 
-  // Init PeerJS
   peer = new Peer({ host:'0.peerjs.com', port:443, secure:true, path:'/' });
 
+  function showMenu(){
+    document.getElementById('connectingScreen').classList.remove('show');
+    document.getElementById('menuPage').style.display = 'block';
+    document.getElementById('tblBadge').textContent = selTable;
+    document.getElementById('modalTbl').textContent = selTable;
+    buildTabs(); renderMenu('all');
+  }
+
   peer.on('open', () => {
-    // Oshpazga ulan
     conn = peer.connect(oshpazId);
     conn.on('open', () => {
-      document.getElementById('connectingScreen').classList.remove('show');
-      document.getElementById('menuPage').style.display = 'block';
-      document.getElementById('tblBadge').textContent = selTable;
-      document.getElementById('modalTbl').textContent = selTable;
       setConnUI(true);
-      buildTabs(); renderMenu('all');
-      // Admindan menyu va nomni so'rash
+      showMenu();
       conn.send({type:'get_menu'});
     });
     conn.on('data', handleData);
     conn.on('close', () => setConnUI(false));
     conn.on('error', () => setConnUI(false));
 
-    // Timeout
     setTimeout(()=>{
-      if(!conn.open){
-        document.getElementById('connectingScreen').classList.remove('show');
-        document.getElementById('menuPage').style.display = 'block';
-        document.getElementById('tblBadge').textContent = selTable;
-        document.getElementById('modalTbl').textContent = selTable;
+      if(!conn || !conn.open){
         setConnUI(false);
-        buildTabs(); renderMenu('all');
+        showMenu();
         showToast('⚠️ Oshpaz topilmadi – offline rejim');
       }
     }, 8000);
   });
 
   peer.on('error', () => {
-    document.getElementById('connectingScreen').classList.remove('show');
-    document.getElementById('menuPage').style.display = 'block';
-    document.getElementById('tblBadge').textContent = selTable;
-    document.getElementById('modalTbl').textContent = selTable;
     setConnUI(false);
-    buildTabs(); renderMenu('all');
+    showMenu();
     showToast('⚠️ Ulanish xatosi – offline rejim');
   });
 }
