@@ -1,1 +1,523 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<script>if(typeof Peer==='undefined'){document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"><\/script>');}</script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#C9A84C;--gold-light:#E8C97A;--dark:#0D1117;--dark2:#161B22;--dark3:#1C2128;--green:#2EA043;--gl:#3FB950;--red:#F85149;--yellow:#D29922;--blue:#388BFD;--text:#E6EDF3;--muted:#7D8590;--border:#30363D;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:var(--dark);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+/* LOGIN */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.lcard{background:var(--dark2);border:1px solid var(--border);border-radius:20px;padding:30px 24px;width:100%;max-width:320px;text-align:center;}
+.licon{font-size:48px;margin-bottom:12px;}
+.ltitle{font-family:'Playfair Display',serif;font-size:22px;color:var(--gold);margin-bottom:4px;}
+.lsub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.linput{width:100%;background:var(--dark3);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:18px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;text-align:center;letter-spacing:6px;margin-bottom:10px;}
+.linput:focus{border-color:var(--gold);}
+.lbtn{width:100%;background:var(--gold);border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;color:#000;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.lerr{font-size:12px;color:var(--red);margin-top:6px;min-height:16px;}
+
+/* MAIN */
+#mainScreen{display:none;min-height:100vh;}
+.topbar{background:var(--dark2);border-bottom:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-family:'Playfair Display',serif;font-size:17px;color:var(--gold);flex:1;}
+.conn-badge{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted);background:var(--dark3);border:1px solid var(--border);border-radius:20px;padding:4px 10px;}
+.cdot{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;}
+.cdot.on{background:var(--gl);box-shadow:0 0 5px var(--gl);}
+.icon-btn{background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:14px;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;}
+
+.section{padding:12px 14px;}
+.sec-label{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+
+/* RESTORAN NOMI */
+.name-row{display:flex;gap:8px;margin-bottom:16px;}
+.name-inp{flex:1;background:var(--dark3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;}
+.name-inp:focus{border-color:var(--gold);}
+.save-btn{background:var(--gold);border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;color:#000;cursor:pointer;white-space:nowrap;}
+
+/* STATISTIKA */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.stat-card{background:var(--dark2);border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;}
+.stat-num{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:3px;}
+.stat-big{grid-column:1/-1;background:linear-gradient(135deg,rgba(46,160,67,0.15),rgba(46,160,67,0.05));border-color:rgba(46,160,67,0.3);}
+
+/* ULANGANLAR */
+.clients-row{display:flex;gap:8px;margin-bottom:16px;}
+.client-badge{background:var(--dark3);border:1px solid var(--border);border-radius:10px;padding:6px 12px;font-size:12px;display:flex;align-items:center;gap:5px;}
+.client-dot{width:6px;height:6px;border-radius:50%;}
+
+.reset-btn{width:100%;background:rgba(248,81,73,0.1);border:1px solid rgba(248,81,73,0.3);border-radius:10px;padding:10px;font-size:13px;color:var(--red);cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:4px;}
+
+/* MENYU */
+.sec-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none;}
+.sec-tabs::-webkit-scrollbar{display:none;}
+.sec-tab{flex-shrink:0;padding:6px 13px;border-radius:20px;border:1px solid var(--border);background:var(--dark3);color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.sec-tab.active{background:rgba(201,168,76,0.2);color:var(--gold);border-color:var(--gold);}
+
+.items-list{display:flex;flex-direction:column;gap:8px;padding-bottom:100px;}
+.item-card{background:var(--dark2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;}
+.item-img{width:48px;height:48px;border-radius:10px;object-fit:cover;flex-shrink:0;}
+.item-ph{width:48px;height:48px;border-radius:10px;background:var(--dark3);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.item-info{flex:1;min-width:0;}
+.item-name{font-size:14px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.item-price{font-size:12px;color:var(--gold);margin-top:2px;}
+.item-btns{display:flex;gap:6px;}
+.edit-btn{width:30px;height:30px;border-radius:8px;border:1px solid rgba(201,168,76,0.3);background:rgba(201,168,76,0.1);color:var(--gold);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.del-btn{width:30px;height:30px;border-radius:8px;border:1px solid rgba(248,81,73,0.3);background:rgba(248,81,73,0.1);color:var(--red);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+.fab{position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--gold);border:none;font-size:26px;color:#000;cursor:pointer;box-shadow:0 4px 20px rgba(201,168,76,0.4);z-index:40;font-weight:700;}
+
+/* EDIT MODAL */
+.eoverlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;display:flex;align-items:flex-end;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(4px);}
+.eoverlay.open{opacity:1;pointer-events:all;}
+.emodal{background:linear-gradient(180deg,var(--dark2),var(--dark));border-top:1px solid rgba(201,168,76,0.3);border-radius:24px 24px 0 0;width:100%;padding:18px 16px 36px;transform:translateY(40px);transition:transform .3s cubic-bezier(.4,0,.2,1);max-height:92vh;overflow-y:auto;}
+.eoverlay.open .emodal{transform:translateY(0);}
+.ehandle{width:40px;height:4px;background:rgba(201,168,76,0.3);border-radius:2px;margin:0 auto 16px;}
+.etitle{font-family:'Playfair Display',serif;font-size:18px;color:var(--text);margin-bottom:14px;}
+.egroup{margin-bottom:12px;}
+.elabel{font-size:11px;color:var(--muted);margin-bottom:5px;display:block;letter-spacing:.5px;}
+.einput{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;}
+.einput:focus{border-color:rgba(201,168,76,0.5);}
+.eselect{width:100%;background:var(--dark2);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;}
+
+.img-upload{width:100%;height:130px;border:2px dashed rgba(201,168,76,0.3);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;background:rgba(255,255,255,0.02);}
+.img-upload input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0;}
+.img-upload img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:14px;}
+.img-clear{position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);border:none;border-radius:50%;width:24px;height:24px;color:#fff;font-size:14px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:2;}
+.img-ph-text{font-size:13px;color:var(--muted);text-align:center;pointer-events:none;}
+
+.esave{width:100%;background:linear-gradient(135deg,var(--gold-light),#B8902A);border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;color:#000;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:8px;}
+.ecancel{width:100%;background:transparent;border:1px solid rgba(201,168,76,0.2);border-radius:14px;padding:12px;font-size:14px;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:8px;}
+
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-70px);background:var(--dark3);border:1px solid var(--border);border-radius:12px;padding:10px 18px;font-size:13px;color:var(--text);z-index:200;transition:transform .3s;white-space:nowrap;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="lcard">
+    <div class="licon">⚙️</div>
+    <div class="ltitle">Admin Panel</div>
+    <div class="lsub">Admin parolini kiriting</div>
+    <input class="linput" type="password" id="passInput" placeholder="••••" maxlength="10">
+    <button class="lbtn" onclick="doLogin()">Kirish</button>
+    <div class="lerr" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div id="mainScreen">
+  <div class="topbar">
+    <div class="topbar-title">⚙️ Admin Panel</div>
+    <div class="conn-badge"><div class="cdot" id="connDot"></div><span id="connText">Kutilmoqda</span></div>
+    <button class="icon-btn" onclick="doLogout()">Chiqish</button>
+  </div>
+
+  <div class="section">
+
+    <!-- RESTORAN NOMI -->
+    <div class="sec-label">🏷️ Restoran nomi</div>
+    <div class="name-row">
+      <input class="name-inp" id="restNameInp" placeholder="Restoran nomi...">
+      <button class="save-btn" onclick="saveRestName()">Saqlash</button>
+    </div>
+
+    <!-- STATISTIKA -->
+    <div class="sec-label">📊 Bugungi statistika</div>
+    <div class="stats-grid">
+      <div class="stat-card stat-big">
+        <div class="stat-num" style="color:var(--gl);font-size:28px" id="sTotalSumma">0 so'm</div>
+        <div class="stat-lbl">💰 Jami tushum</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--gold)" id="sBuyurtma">0</div>
+        <div class="stat-lbl">Buyurtmalar</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--blue)" id="sTaom">0</div>
+        <div class="stat-lbl">Taomlar sotildi</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--yellow)" id="sYangi">0</div>
+        <div class="stat-lbl">Yangi (kutilmoqda)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--text)" id="sOrtacha">0</div>
+        <div class="stat-lbl">O'rtacha chek</div>
+      </div>
+    </div>
+
+    <!-- ULANGANLAR -->
+    <div class="sec-label">📡 Ulanganlar</div>
+    <div class="clients-row">
+      <div class="client-badge"><div class="client-dot" style="background:var(--yellow)"></div><span id="clientMijoz">Mijoz: 0</span></div>
+      <div class="client-badge"><div class="client-dot" style="background:var(--blue)"></div><span id="clientOshpaz">Oshpaz: 0</span></div>
+    </div>
+
+    <button class="reset-btn" onclick="resetStats()">🗑️ Kunlik statistikani yangilash</button>
+
+    <!-- MENYU -->
+    <div class="sec-label" style="margin-top:16px;">🍽️ Menyu boshqarish</div>
+    <div class="sec-tabs" id="secTabs"></div>
+    <div class="items-list" id="itemsList"></div>
+  </div>
+
+  <button class="fab" onclick="openAddForm()">+</button>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="eoverlay" id="editOverlay">
+  <div class="emodal">
+    <div class="ehandle"></div>
+    <div class="etitle" id="etitle">Yangi taom</div>
+    <div class="egroup">
+      <label class="elabel">TAOM RASMI</label>
+      <div class="img-upload" id="imgArea">
+        <input type="file" accept="image/*" id="imgFile" onchange="onImgSelect(event)">
+        <button class="img-clear" id="imgClear" onclick="clearImg(event)">✕</button>
+        <img id="imgPreview" style="display:none">
+        <div id="imgPh"><div style="font-size:28px;margin-bottom:6px">📷</div><div class="img-ph-text">Galereyadan rasm tanlang</div></div>
+      </div>
+    </div>
+    <div class="egroup"><label class="elabel">TAOM NOMI</label><input class="einput" id="eName" placeholder="Masalan: Kabob" type="text"></div>
+    <div class="egroup"><label class="elabel">TAVSIF</label><input class="einput" id="eDesc" placeholder="Masalan: Tandirda pishirilgan"></div>
+    <div class="egroup"><label class="elabel">NARX (so'm)</label><input class="einput" id="ePrice" placeholder="35000" type="number" inputmode="numeric"></div>
+    <div class="egroup">
+      <label class="elabel">BO'LIM</label>
+      <select class="eselect" id="eSection">
+        <option value="taomlar">🥘 Asosiy taomlar</option>
+        <option value="sho">🍲 Sho'rvalar</option>
+        <option value="salatlar">🥗 Salatlar</option>
+        <option value="icimliklar">🥤 Ichimliklar</option>
+        <option value="shirinliklar">🍰 Shirinliklar</option>
+      </select>
+    </div>
+    <button class="esave" onclick="saveItem()">💾 Saqlash</button>
+    <button class="ecancel" onclick="closeEdit()">Bekor qilish</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ADMIN_PASS = "1234";
+const ADMIN_PEER_ID = "restoran-admin-2024";
+
+let peer, connections = [];
+let connMijoz = 0, connOshpaz = 0;
+let curSec = 'taomlar';
+let editingId = null, editingSection = null, curImg = null, nextId = 500;
+
+// Statistika
+let stats = JSON.parse(localStorage.getItem('adminStats') || '{"summa":0,"buyurtma":0,"taom":0,"yangi":0}');
+
+// Menyu
+let menu = JSON.parse(localStorage.getItem('restMenu') || 'null') || {
+  taomlar:{title:"🥘 Asosiy Taomlar",items:[
+    {id:1,name:"Osh (Palov)",desc:"Qo'y go'shti, sabzi, guruch",price:35000,img:null,emoji:"🍚"},
+    {id:2,name:"Kabob",desc:"Qo'y go'shtidan, tandirda",price:42000,img:null,emoji:"🍢"},
+    {id:3,name:"Dimlama",desc:"Yashilliklar bilan go'sht",price:38000,img:null,emoji:"🥘"},
+    {id:4,name:"Norin",desc:"Uy qo'li unidan",price:28000,img:null,emoji:"🍜"},
+    {id:5,name:"Qovurma lag'mon",desc:"Qo'lda tortilgan",price:32000,img:null,emoji:"🍝"},
+  ]},
+  sho:{title:"🍲 Sho'rvalar",items:[
+    {id:7,name:"Qo'y sho'rva",desc:"Sabzavotlar bilan",price:22000,img:null,emoji:"🍜"},
+    {id:8,name:"Mastava",desc:"Guruchli, bahori",price:20000,img:null,emoji:"🥣"},
+    {id:9,name:"Moshxo'rda",desc:"Mosh va guruch",price:18000,img:null,emoji:"🫕"},
+  ]},
+  salatlar:{title:"🥗 Salatlar",items:[
+    {id:11,name:"Achchiq-chuchuk",desc:"Pomidor, bodring",price:14000,img:null,emoji:"🥗"},
+    {id:12,name:"Ko'k salat",desc:"Yashil barglar",price:12000,img:null,emoji:"🥬"},
+    {id:13,name:"Olivye",desc:"Klassik tarvaqay",price:16000,img:null,emoji:"🥄"},
+  ]},
+  icimliklar:{title:"🥤 Ichimliklar",items:[
+    {id:15,name:"Ko'k choy",desc:"Samarqand, piyola bilan",price:8000,img:null,emoji:"🍵"},
+    {id:16,name:"Qora choy",desc:"Toza limon bilan",price:8000,img:null,emoji:"☕"},
+    {id:17,name:"Kompot",desc:"Uy kompoti",price:10000,img:null,emoji:"🍹"},
+    {id:18,name:"Mineral suv",desc:"0.5L",price:6000,img:null,emoji:"💧"},
+    {id:19,name:"Limonad",desc:"Limon, nanada toza",price:12000,img:null,emoji:"🍋"},
+  ]},
+  shirinliklar:{title:"🍰 Shirinliklar",items:[
+    {id:21,name:"Non (Obi non)",desc:"Tandirdan yangi",price:5000,img:null,emoji:"🫓"},
+    {id:22,name:"Samsa",desc:"Go'shtli, tandirda",price:8000,img:null,emoji:"🥟"},
+    {id:23,name:"Halva",desc:"An'anaviy o'zbek halva",price:12000,img:null,emoji:"🍬"},
+    {id:24,name:"Tort",desc:"Qaymoqli, mazali",price:18000,img:null,emoji:"🎂"},
+  ]}
+};
+let restName = localStorage.getItem('restName') || 'La Dolce Vita';
+
+function saveLocal(){ localStorage.setItem('restMenu', JSON.stringify(menu)); }
+function saveStats(){ localStorage.setItem('adminStats', JSON.stringify(stats)); }
+
+// LOGIN
+function doLogin(){
+  if(document.getElementById('passInput').value === ADMIN_PASS){
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainScreen').style.display = 'block';
+    document.getElementById('restNameInp').value = restName;
+    updateStats();
+    buildSecTabs(); renderItems();
+    initPeer();
+  } else {
+    document.getElementById('loginErr').textContent = '❌ Noto\'g\'ri parol!';
+    document.getElementById('passInput').value = '';
+  }
+}
+
+function doLogout(){
+  if(peer){ peer.destroy(); peer = null; }
+  connections = [];
+  document.getElementById('mainScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('passInput').value = '';
+}
+
+// PEER - Admin server sifatida ishlaydi
+function initPeer(){
+  peer = new Peer(ADMIN_PEER_ID, {host:'0.peerjs.com', port:443, secure:true, path:'/'});
+
+  peer.on('open', id => {
+    setConn(true, 'Server tayyor ✓');
+    showToast('✅ Server ishga tushdi');
+  });
+
+  peer.on('connection', conn => {
+    connections.push(conn);
+    conn.on('open', () => {
+      // Ulanuvchi turiga qarab hisoblash
+      if(conn.metadata && conn.metadata.type === 'oshpaz') connOshpaz++;
+      else connMijoz++;
+      updateClientCount();
+      // Darhol menyu yuborish
+      conn.send({type:'menu_update', menu, restName});
+    });
+    conn.on('data', data => handleMsg(data, conn));
+    conn.on('close', () => {
+      if(conn.metadata && conn.metadata.type === 'oshpaz') connOshpaz = Math.max(0, connOshpaz-1);
+      else connMijoz = Math.max(0, connMijoz-1);
+      connections = connections.filter(c => c !== conn);
+      updateClientCount();
+    });
+  });
+
+  peer.on('error', err => {
+    if(err.type === 'unavailable-id'){
+      showToast('⚠️ ID band — qayta urinilmoqda...');
+      setTimeout(()=>{
+        peer.destroy();
+        initPeer();
+      }, 3000);
+    } else {
+      setConn(false, 'Xato: ' + err.type);
+    }
+  });
+  peer.on('disconnected', () => { setConn(false, 'Uzildi'); peer.reconnect(); });
+}
+
+function handleMsg(data, fromConn){
+  if(data.type === 'get_menu'){
+    fromConn.send({type:'menu_update', menu, restName});
+  }
+  if(data.type === 'new_order'){
+    // Oshpazlarga forward qilish
+    connections.forEach(c => {
+      if(c !== fromConn && c.open) try{ c.send(data); }catch(e){}
+    });
+    // Statistikaga qo'shish
+    const o = data.order;
+    stats.buyurtma++;
+    stats.summa += o.jami_summa || 0;
+    stats.taom += (o.taomlar||[]).reduce((s,t)=>s+t.miqdor,0);
+    stats.yangi++;
+    saveStats(); updateStats();
+  }
+  if(data.type === 'order_status'){
+    // Oshpaz statusni o'zgartirdi — barchaga yuborish
+    if(data.holat === 'tayyor') stats.yangi = Math.max(0, stats.yangi-1);
+    saveStats(); updateStats();
+    connections.forEach(c => {
+      if(c !== fromConn && c.open) try{ c.send(data); }catch(e){}
+    });
+  }
+  if(data.type === 'order_confirmed'){
+    // Mijozga qaytarish
+    connections.forEach(c => {
+      if(c !== fromConn && c.open) try{ c.send(data); }catch(e){}
+    });
+  }
+}
+
+function broadcast(data){
+  connections.forEach(c => { if(c && c.open) try{ c.send(data); }catch(e){} });
+}
+
+// STATISTIKA
+function updateStats(){
+  document.getElementById('sTotalSumma').textContent = fmt(stats.summa) + ' so\'m';
+  document.getElementById('sBuyurtma').textContent = stats.buyurtma;
+  document.getElementById('sTaom').textContent = stats.taom;
+  document.getElementById('sYangi').textContent = stats.yangi;
+  document.getElementById('sOrtacha').textContent = stats.buyurtma ? fmt(Math.round(stats.summa/stats.buyurtma))+' so\'m' : '0 so\'m';
+}
+
+function resetStats(){
+  if(!confirm('Bugungi statistikani tozalaysizmi?')) return;
+  stats = {summa:0, buyurtma:0, taom:0, yangi:0};
+  saveStats(); updateStats();
+  showToast('✅ Statistika tozalandi');
+}
+
+function updateClientCount(){
+  document.getElementById('clientMijoz').textContent = 'Mijoz: ' + connMijoz;
+  document.getElementById('clientOshpaz').textContent = 'Oshpaz: ' + connOshpaz;
+}
+
+// RESTORAN NOMI
+function saveRestName(){
+  restName = document.getElementById('restNameInp').value.trim() || 'Restoran';
+  localStorage.setItem('restName', restName);
+  broadcast({type:'menu_update', menu, restName});
+  showToast('✅ Nom saqlandi va yuborildi');
+}
+
+// MENYU
+function buildSecTabs(){
+  const secs=[{k:'taomlar',l:'🥘 Taomlar'},{k:'sho',l:"🍲 Sho'rva"},{k:'salatlar',l:'🥗 Salat'},{k:'icimliklar',l:'🥤 Ichimlik'},{k:'shirinliklar',l:'🍰 Shirin'}];
+  document.getElementById('secTabs').innerHTML = secs.map(s=>`<button class="sec-tab ${s.k===curSec?'active':''}" onclick="switchSec('${s.k}',this)">${s.l}</button>`).join('');
+}
+
+function switchSec(k, btn){
+  curSec = k;
+  document.querySelectorAll('.sec-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  renderItems();
+}
+
+function renderItems(){
+  const sec = menu[curSec];
+  if(!sec||!sec.items.length){ document.getElementById('itemsList').innerHTML='<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">Bo\'sh. + tugmasini bosing.</div>'; return; }
+  document.getElementById('itemsList').innerHTML = sec.items.map(item => {
+    const imgEl = item.img ? `<img class="item-img" src="${item.img}">` : `<div class="item-ph">${item.emoji||'🍽️'}</div>`;
+    return `<div class="item-card">
+      ${imgEl}
+      <div class="item-info"><div class="item-name">${item.name}</div><div class="item-price">${fmt(item.price)} so'm</div></div>
+      <div class="item-btns">
+        <button class="edit-btn" onclick="openEditForm(${item.id},'${curSec}')">✏️</button>
+        <button class="del-btn" onclick="deleteItem(${item.id})">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteItem(id){
+  if(!confirm('O\'chirasizmi?')) return;
+  for(const k in menu) menu[k].items = menu[k].items.filter(i=>i.id!==id);
+  saveLocal(); renderItems();
+  broadcast({type:'menu_update', menu, restName});
+  showToast('🗑️ O\'chirildi va yuborildi');
+}
+
+// EDIT FORM
+function openAddForm(){
+  editingId=null; editingSection=null; curImg=null;
+  document.getElementById('etitle').textContent = '➕ Yangi taom';
+  document.getElementById('eName').value='';
+  document.getElementById('eDesc').value='';
+  document.getElementById('ePrice').value='';
+  document.getElementById('eSection').value = curSec;
+  resetImgPrev();
+  document.getElementById('editOverlay').classList.add('open');
+}
+
+function openEditForm(id, secKey){
+  const item = menu[secKey]?.items.find(i=>i.id===id);
+  if(!item) return;
+  editingId=id; editingSection=secKey; curImg=item.img||null;
+  document.getElementById('etitle').textContent = '✏️ Taomni tahrirlash';
+  document.getElementById('eName').value = item.name;
+  document.getElementById('eDesc').value = item.desc||'';
+  document.getElementById('ePrice').value = item.price;
+  document.getElementById('eSection').value = secKey;
+  if(item.img){
+    document.getElementById('imgPreview').src = item.img;
+    document.getElementById('imgPreview').style.display = 'block';
+    document.getElementById('imgPh').style.display = 'none';
+    document.getElementById('imgClear').style.display = 'flex';
+  } else { resetImgPrev(); }
+  document.getElementById('editOverlay').classList.add('open');
+}
+
+function closeEdit(){ document.getElementById('editOverlay').classList.remove('open'); }
+
+function onImgSelect(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    curImg = ev.target.result;
+    document.getElementById('imgPreview').src = curImg;
+    document.getElementById('imgPreview').style.display = 'block';
+    document.getElementById('imgPh').style.display = 'none';
+    document.getElementById('imgClear').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearImg(e){
+  e.stopPropagation(); curImg=null;
+  resetImgPrev();
+  document.getElementById('imgFile').value='';
+}
+
+function resetImgPrev(){
+  document.getElementById('imgPreview').style.display='none';
+  document.getElementById('imgPreview').src='';
+  document.getElementById('imgPh').style.display='flex';
+  document.getElementById('imgClear').style.display='none';
+}
+
+function saveItem(){
+  const name = document.getElementById('eName').value.trim();
+  const desc = document.getElementById('eDesc').value.trim();
+  const price = parseInt(document.getElementById('ePrice').value);
+  const sec = document.getElementById('eSection').value;
+  if(!name){ alert('Taom nomini kiriting!'); return; }
+  if(!price||price<=0){ alert('Narxni kiriting!'); return; }
+
+  if(editingId !== null){
+    for(const k in menu) menu[k].items = menu[k].items.filter(i=>i.id!==editingId);
+    menu[sec].items.push({id:editingId, name, desc, price, img:curImg, emoji:'🍽️'});
+  } else {
+    menu[sec].items.push({id:nextId++, name, desc, price, img:curImg, emoji:'🍽️'});
+  }
+  curSec = sec;
+  saveLocal(); closeEdit();
+  buildSecTabs(); renderItems();
+  broadcast({type:'menu_update', menu, restName});
+  showToast('✅ Saqlandi va mijozlarga yuborildi');
+}
+
+// UTILS
+function fmt(p){ return p.toString().replace(/\B(?=(\d{3})+(?!\d))/g," "); }
+function setConn(on, txt){
+  document.getElementById('connDot').className = 'cdot' + (on?' on':'');
+  document.getElementById('connText').textContent = txt;
+}
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg;
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+document.getElementById('passInput').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>
 
